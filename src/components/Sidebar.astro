@@ -1,0 +1,68 @@
+---
+import { getPublicContent, groupContentByDomain } from '../lib/content-utils.mjs';
+
+const cardModules = import.meta.glob('../../content/cards/*.md', { eager: true });
+const articleModules = import.meta.glob('../../content/articles/*.md', { eager: true });
+const topicModules = import.meta.glob('../../content/topics/*.md', { eager: true });
+
+function collect(source, type) {
+  return Object.entries(source).map(([path, module]) => ({
+    ...module.frontmatter,
+    type,
+    slug: path.split('/').pop().replace(/\.mdx?$/, ''),
+  }));
+}
+
+const allItems = getPublicContent([
+  ...collect(cardModules, 'card'),
+  ...collect(articleModules, 'article'),
+  ...collect(topicModules, 'topic'),
+]);
+
+const grouped = groupContentByDomain(allItems);
+
+const { currentSlug = '' } = Astro.props;
+
+function href(item) {
+  if (item.type === 'card') return `/cards/${item.slug}/`;
+  return `/${item.type}s/${item.slug}/`;
+}
+
+function isActive(item) {
+  return item.slug === currentSlug;
+}
+
+const domainLabels = {
+  'digital-signal-processing': 'DSP',
+  'satellite-communication': 'Sat Comm',
+};
+---
+
+{
+  Object.entries(grouped).map(([domain, group]) => {
+    const label = domainLabels[domain] || domain;
+    const allNodes = [...group.topics, ...group.cards, ...group.articles];
+    if (allNodes.length === 0) return null;
+
+    return (
+      <div class="sidebar-section">
+        <div class="sidebar-heading" aria-label={domain}>
+          {label}
+        </div>
+        <ul class="sidebar-items">
+          {allNodes.map((item) => (
+            <li>
+              <a
+                href={href(item)}
+                class={`sidebar-link${isActive(item) ? ' active' : ''}`}
+              >
+                <span class="type-badge">{item.type === 'card' ? 'C' : item.type === 'article' ? 'A' : 'T'}</span>
+                {item.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  })
+}

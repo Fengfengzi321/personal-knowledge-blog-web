@@ -1,0 +1,79 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPublicContent, groupContentByDomain } from '../lib/content-utils.mjs';
+
+const cardModules = import.meta.glob('../../content/cards/*.md', { eager: true });
+const articleModules = import.meta.glob('../../content/articles/*.md', { eager: true });
+const topicModules = import.meta.glob('../../content/topics/*.md', { eager: true });
+
+function collect(modules, type) {
+  return Object.entries(modules).map(([path, module]) => ({
+    ...module.frontmatter,
+    type,
+    slug: path.split('/').pop().replace(/\.mdx?$/, ''),
+  }));
+}
+
+const publicItems = getPublicContent([
+  ...collect(cardModules, 'card'),
+  ...collect(articleModules, 'article'),
+  ...collect(topicModules, 'topic'),
+]);
+const grouped = groupContentByDomain(publicItems);
+const totalCards = publicItems.filter((item) => item.type === 'card').length;
+const totalArticles = publicItems.filter((item) => item.type === 'article').length;
+const totalTopics = publicItems.filter((item) => item.type === 'topic').length;
+
+function hrefFor(item) {
+  return `/${item.type === 'card' ? 'cards' : `${item.type}s`}/${item.slug}/`;
+}
+---
+
+<BaseLayout title="Knowledge Map" showSidebar={false}>
+  <section class="hero">
+    <div>
+      <p class="eyebrow">王十二的小站 · 知识地图</p>
+      <h1>把碎片知识沉淀成自己的技术地图</h1>
+      <p class="lead">
+        以知识地图为入口，将 DSP 算法、卫星通信仿真、资源调度和波束覆盖算法逐步组织成可检索、可扩展、可公开分享的个人知识体系。
+      </p>
+    </div>
+    <aside class="panel">
+      <div class="stats" aria-label="Content statistics">
+        <div class="stat"><strong>{totalTopics}</strong><span>专题</span></div>
+        <div class="stat"><strong>{totalCards}</strong><span>卡片</span></div>
+        <div class="stat"><strong>{totalArticles}</strong><span>文章</span></div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="domain-grid" aria-label="Knowledge domains">
+    {Object.entries(grouped).map(([domain, group]) => (
+      <article class="domain">
+        <div class="domain-header">
+          <div>
+            <p class="eyebrow">{domain}</p>
+            <h2>{group.topics[0]?.title ?? domain}</h2>
+          </div>
+          <div class="count-row">
+            <span class="badge">{group.cards.length} cards</span>
+            <span class="badge">{group.articles.length} articles</span>
+          </div>
+        </div>
+
+        <div class="section-list">
+          {[...group.topics, ...group.cards, ...group.articles].map((item) => (
+            <a class="content-card" href={hrefFor(item)}>
+              <h3>{item.title}</h3>
+              <p>{item.summary}</p>
+              <div class="meta">
+                <span class={`tag ${item.status ?? ''}`}>{item.status ?? item.type}</span>
+                <span class={`tag ${item.visibility}`}>{item.visibility}</span>
+              </div>
+            </a>
+          ))}
+        </div>
+      </article>
+    ))}
+  </section>
+</BaseLayout>

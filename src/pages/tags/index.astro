@@ -1,0 +1,63 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Sidebar from '../../components/Sidebar.astro';
+import { getPublicContent } from '../../lib/content-utils.mjs';
+
+const cardModules = import.meta.glob('../../../content/cards/*.md', { eager: true });
+const articleModules = import.meta.glob('../../../content/articles/*.md', { eager: true });
+const topicModules = import.meta.glob('../../../content/topics/*.md', { eager: true });
+
+function collect(source, type) {
+  return Object.entries(source).map(([path, module]) => ({
+    ...module.frontmatter,
+    type,
+    slug: path.split('/').pop().replace(/\.mdx?$/, ''),
+  }));
+}
+
+const allItems = getPublicContent([
+  ...collect(cardModules, 'card'),
+  ...collect(articleModules, 'article'),
+  ...collect(topicModules, 'topic'),
+]);
+
+const tagMap = {};
+for (const item of allItems) {
+  const tags = item.tags || [];
+  for (const tag of tags) {
+    const key = tag.toLowerCase();
+    if (!tagMap[key]) {
+      tagMap[key] = { name: tag, items: [] };
+    }
+    tagMap[key].items.push(item);
+  }
+}
+
+const sortedTags = Object.entries(tagMap)
+  .sort(([, a], [, b]) => b.items.length - a.items.length);
+---
+
+<BaseLayout title="Tags | Personal Knowledge Platform">
+  <fragment slot="sidebar">
+    <Sidebar currentSlug="" />
+  </fragment>
+
+  <article class="content-body">
+    <p class="eyebrow">Browse</p>
+    <h1>Tags</h1>
+    <p class="lead">按标签浏览所有知识内容。</p>
+
+    {sortedTags.length > 0 ? (
+      <div class="tag-cloud">
+        {sortedTags.map(([key, data]) => (
+          <a href={`/tags/${encodeURIComponent(key)}/`} class="tag-item">
+            #{data.name}
+            <span class="count">({data.items.length})</span>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <p style="color: var(--muted);">暂无标签内容。</p>
+    )}
+  </article>
+</BaseLayout>

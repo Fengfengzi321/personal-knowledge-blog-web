@@ -1,0 +1,138 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPublicContent } from '../../lib/content-utils.mjs';
+
+export function getStaticPaths() {
+  const PER_PAGE = 5;
+
+  function collect(source, type) {
+    return Object.entries(source).map(([path, module]) => ({
+      ...module.frontmatter,
+      type,
+      slug: path.split('/').pop().replace(/\.mdx?$/, ''),
+    }));
+  }
+
+  const cardModules = import.meta.glob('../../../content/cards/*.md', { eager: true });
+  const articleModules = import.meta.glob('../../../content/articles/*.md', { eager: true });
+  const topicModules = import.meta.glob('../../../content/topics/*.md', { eager: true });
+
+  const allItems = getPublicContent([
+    ...collect(cardModules, 'card'),
+    ...collect(articleModules, 'article'),
+    ...collect(topicModules, 'topic'),
+  ]);
+
+  const pages = Math.ceil(allItems.length / PER_PAGE) || 1;
+  const paths = [];
+  for (let i = 2; i <= pages; i++) {
+    paths.push({ params: { page: String(i) } });
+  }
+  return paths;
+}
+
+const PER_PAGE = 5;
+
+function collect(source, type) {
+  return Object.entries(source).map(([path, module]) => ({
+    ...module.frontmatter,
+    type,
+    slug: path.split('/').pop().replace(/\.mdx?$/, ''),
+  }));
+}
+
+const cardModules = import.meta.glob('../../../content/cards/*.md', { eager: true });
+const articleModules = import.meta.glob('../../../content/articles/*.md', { eager: true });
+const topicModules = import.meta.glob('../../../content/topics/*.md', { eager: true });
+
+const allItems = getPublicContent([
+  ...collect(cardModules, 'card'),
+  ...collect(articleModules, 'article'),
+  ...collect(topicModules, 'topic'),
+]);
+
+const sortedItems = [...allItems].sort((a, b) => {
+  const dateA = a.date || '0000-00-00';
+  const dateB = b.date || '0000-00-00';
+  if (dateA > dateB) return -1;
+  if (dateA < dateB) return 1;
+  return a.title.localeCompare(b.title);
+});
+
+const totalPages = Math.ceil(sortedItems.length / PER_PAGE) || 1;
+
+const { page } = Astro.params;
+const currentPage = Math.max(2, Math.min(totalPages, parseInt(page, 10) || 2));
+const startIdx = (currentPage - 1) * PER_PAGE;
+const pageItems = sortedItems.slice(startIdx, startIdx + PER_PAGE);
+
+function hrefFor(item) {
+  return `/${item.type === 'card' ? 'cards' : `${item.type}s`}/${item.slug}/`;
+}
+
+function formatDate(raw) {
+  if (!raw) return '';
+  const datePart = typeof raw === 'string' ? raw.split('T')[0] : String(raw).split('T')[0];
+  const [y, m, d] = datePart.split('-').map(Number);
+  if (!y || !m || !d) return '';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${d} ${months[m - 1]}, ${y}`;
+}
+
+function toSlug(raw) {
+  if (!raw) return '';
+  return (typeof raw === 'string' ? raw.split('T')[0] : String(raw).split('T')[0]);
+}
+
+function pageHref(p) {
+  return p === 1 ? '/posts/' : `/posts/${p}/`;
+}
+---
+
+<BaseLayout title={`Posts — Page ${currentPage}`} showSidebar={false}>
+  <div class="posts-page">
+    <h1 class="posts-heading">Posts</h1>
+    <p class="posts-subtitle">All the articles I've posted. — Page {currentPage}</p>
+
+    <div class="posts-list">
+      {pageItems.map((item) => (
+        <article class="post-entry">
+          <h3 class="post-entry-title">
+            <a href={hrefFor(item)}>{item.title}</a>
+          </h3>
+          <p class="post-entry-date">
+            <svg class="cal-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <time datetime={toSlug(item.date)}>{formatDate(item.date)}</time>
+          </p>
+          <p class="post-entry-desc">{item.summary}</p>
+        </article>
+      ))}
+    </div>
+
+    {totalPages > 1 && (
+      <nav class="pagination" aria-label="Pagination">
+        {currentPage > 1 ? (
+          <a class="page-link prev" href={pageHref(currentPage - 1)} aria-label="Previous page">‹ Prev</a>
+        ) : (
+          <span class="page-link disabled">‹ Prev</span>
+        )}
+
+        <div class="page-numbers">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            p === currentPage ? (
+              <span class="page-num current" aria-current="page">{p}</span>
+            ) : (
+              <a class="page-num" href={pageHref(p)}>{p}</a>
+            )
+          ))}
+        </div>
+
+        {currentPage < totalPages ? (
+          <a class="page-link next" href={pageHref(currentPage + 1)} aria-label="Next page">Next ›</a>
+        ) : (
+          <span class="page-link disabled">Next ›</span>
+        )}
+      </nav>
+    )}
+  </div>
+</BaseLayout>

@@ -1,0 +1,69 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Sidebar from '../../components/Sidebar.astro';
+import { getPublicContent, resolveRelatedItems } from '../../lib/content-utils.mjs';
+
+const modules = import.meta.glob('../../../content/topics/*.md', { eager: true });
+const cardModules = import.meta.glob('../../../content/cards/*.md', { eager: true });
+const articleModules = import.meta.glob('../../../content/articles/*.md', { eager: true });
+
+function collect(source, type) {
+  return Object.entries(source).map(([path, module]) => ({
+    ...module.frontmatter,
+    Content: module.default,
+    type,
+    slug: path.split('/').pop().replace(/\.mdx?$/, ''),
+  }));
+}
+
+export function getStaticPaths() {
+  const topicEntries = Object.entries(import.meta.glob('../../../content/topics/*.md', { eager: true })).map(([path, module]) => ({
+    ...module.frontmatter,
+    Content: module.default,
+    type: 'topic',
+    slug: path.split('/').pop().replace(/\.mdx?$/, ''),
+  }));
+
+  return getPublicContent(topicEntries).map((item) => ({
+    params: { slug: item.slug },
+    props: { item },
+  }));
+}
+
+const { item } = Astro.props;
+const related = resolveRelatedItems(item, getPublicContent([
+  ...collect(cardModules, 'card'),
+  ...collect(articleModules, 'article'),
+  ...collect(modules, 'topic'),
+]));
+const Content = item.Content;
+---
+
+<BaseLayout title={`${item.title} | Topic`} description={item.summary}>
+  <fragment slot="sidebar">
+    <Sidebar currentSlug={item.slug} />
+  </fragment>
+
+  <article class="content-body">
+    <p class="eyebrow">Topic</p>
+    <h1>{item.title}</h1>
+    <p class="lead">{item.summary}</p>
+    <div class="meta-row">
+      <span class="tag">{item.domain}</span>
+      <span class={`tag ${item.visibility}`}>{item.visibility}</span>
+    </div>
+    <Content />
+    {related.length > 0 && (
+      <section class="related-section">
+        <h2>专题节点</h2>
+        <div class="related-list">
+          {related.map((entry) => (
+            <a class="related-item" href={`/${entry.type === 'card' ? 'cards' : `${entry.type}s`}/${entry.slug}/`}>
+              {entry.title}
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+  </article>
+</BaseLayout>

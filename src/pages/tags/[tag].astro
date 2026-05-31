@@ -1,0 +1,116 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Sidebar from '../../components/Sidebar.astro';
+import { getPublicContent } from '../../lib/content-utils.mjs';
+
+export function getStaticPaths() {
+  const cardModules = import.meta.glob('../../../content/cards/*.md', { eager: true });
+  const articleModules = import.meta.glob('../../../content/articles/*.md', { eager: true });
+  const topicModules = import.meta.glob('../../../content/topics/*.md', { eager: true });
+
+  function collect(source, type) {
+    return Object.entries(source).map(([path, module]) => ({
+      ...module.frontmatter,
+      type,
+      slug: path.split('/').pop().replace(/\.mdx?$/, ''),
+    }));
+  }
+
+  const allItems = getPublicContent([
+    ...collect(cardModules, 'card'),
+    ...collect(articleModules, 'article'),
+    ...collect(topicModules, 'topic'),
+  ]);
+
+  const keys = new Set();
+  for (const item of allItems) {
+    const tags = item.tags || [];
+    for (const tag of tags) {
+      keys.add(tag.toLowerCase());
+    }
+  }
+
+  return Array.from(keys).map((key) => ({
+    params: { tag: key },
+  }));
+}
+
+// Module-level: for rendering
+function collect(source, type) {
+  return Object.entries(source).map(([path, module]) => ({
+    ...module.frontmatter,
+    type,
+    slug: path.split('/').pop().replace(/\.mdx?$/, ''),
+  }));
+}
+
+const cardModules = import.meta.glob('../../../content/cards/*.md', { eager: true });
+const articleModules = import.meta.glob('../../../content/articles/*.md', { eager: true });
+const topicModules = import.meta.glob('../../../content/topics/*.md', { eager: true });
+
+const allItems = getPublicContent([
+  ...collect(cardModules, 'card'),
+  ...collect(articleModules, 'article'),
+  ...collect(topicModules, 'topic'),
+]);
+
+const tagMap = {};
+for (const item of allItems) {
+  const tags = item.tags || [];
+  for (const tag of tags) {
+    const key = tag.toLowerCase();
+    if (!tagMap[key]) {
+      tagMap[key] = { name: tag, items: [] };
+    }
+    tagMap[key].items.push(item);
+  }
+}
+
+const { tag } = Astro.params;
+const data = tagMap[tag];
+const sortedTags = Object.entries(tagMap)
+  .sort(([, a], [, b]) => b.items.length - a.items.length);
+
+function hrefFor(item) {
+  return `/${item.type === 'card' ? 'cards' : `${item.type}s`}/${item.slug}/`;
+}
+---
+
+<BaseLayout title={`#${tag} | Tags`}>
+  <fragment slot="sidebar">
+    <Sidebar currentSlug="" />
+  </fragment>
+
+  <article class="content-body">
+    <p class="eyebrow">Browse</p>
+    <h1>#{tag}</h1>
+    <p class="lead">包含此标签的所有内容。</p>
+
+    <div class="tag-cloud">
+      {sortedTags.map(([key, d]) => (
+        <a
+          href={`/tags/${encodeURIComponent(key)}/`}
+          class={`tag-item${tag === key ? ' active' : ''}`}
+        >
+          #{d.name}
+          <span class="count">({d.items.length})</span>
+        </a>
+      ))}
+    </div>
+
+    {data && (
+      <ul class="tag-posts">
+        {data.items.map((item) => (
+          <li>
+            <a href={hrefFor(item)}>
+              {item.type === 'card' ? '📄' : item.type === 'article' ? '📝' : '📂'} {item.title}
+            </a>
+            <span style="color: var(--muted); font-size: 0.85rem; margin-left: 8px;">
+              {item.type} · {item.domain}
+            </span>
+          </li>
+        ))}
+      </ul>
+    )}
+  </article>
+</BaseLayout>

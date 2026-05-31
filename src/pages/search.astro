@@ -1,0 +1,102 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPublicContent } from '../lib/content-utils.mjs';
+
+const cardModules = import.meta.glob('../../content/cards/*.md', { eager: true });
+const articleModules = import.meta.glob('../../content/articles/*.md', { eager: true });
+const topicModules = import.meta.glob('../../content/topics/*.md', { eager: true });
+
+function collect(source, type) {
+  return Object.entries(source).map(([path, module]) => ({
+    ...module.frontmatter,
+    type,
+    slug: path.split('/').pop().replace(/\.mdx?$/, ''),
+  }));
+}
+
+const allItems = getPublicContent([
+  ...collect(cardModules, 'card'),
+  ...collect(articleModules, 'article'),
+  ...collect(topicModules, 'topic'),
+]);
+
+const searchData = allItems.map((item) => ({
+  title: item.title,
+  summary: item.summary,
+  type: item.type,
+  domain: item.domain,
+  tags: item.tags || [],
+  slug: item.slug,
+}));
+---
+
+<BaseLayout title="Search | Personal Knowledge Platform" showSidebar={false}>
+  <div class="search-page">
+    <h1 class="search-heading">Search</h1>
+    <p class="search-subtitle">Search any article, card, or topic across the knowledge base.</p>
+    <div class="search-box">
+      <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input
+        type="search"
+        id="searchInput"
+        class="search-input"
+        placeholder="Search any article…"
+        autofocus
+        autocomplete="off"
+      />
+    </div>
+
+    <div id="searchResults" class="search-results">
+      <p class="search-hint">Type to search across all published posts.</p>
+    </div>
+  </div>
+
+  <script type="application/json" id="searchData">{JSON.stringify(searchData)}</script>
+  <script is:inline>
+    const data = JSON.parse(document.getElementById('searchData').textContent);
+
+    function hrefFor(item) {
+      if (item.type === 'card') return '/cards/' + item.slug + '/';
+      return '/' + item.type + 's/' + item.slug + '/';
+    }
+
+    function typeLabel(t) {
+      return t === 'card' ? 'Card' : t === 'article' ? 'Article' : 'Topic';
+    }
+
+    document.getElementById('searchInput').addEventListener('input', function() {
+      const q = this.value.trim().toLowerCase();
+      const results = document.getElementById('searchResults');
+
+      if (!q) {
+        results.innerHTML = '<p class="search-hint">Type to search across all published posts.</p>';
+        return;
+      }
+
+      const matches = data.filter(function(item) {
+        return item.title.toLowerCase().includes(q)
+          || item.summary.toLowerCase().includes(q)
+          || item.tags.some(function(t) { return t.toLowerCase().includes(q); })
+          || item.domain.toLowerCase().includes(q);
+      });
+
+      if (matches.length === 0) {
+        results.innerHTML = '<p class="search-none">No results found for "<strong>' + this.value + '</strong>".</p>';
+        return;
+      }
+
+      results.innerHTML = '<div class="search-count">' + matches.length + ' result' + (matches.length > 1 ? 's' : '') + '</div>' +
+        matches.map(function(item) {
+          return '<article class="search-result">' +
+            '<h3 class="search-result-title"><a href="' + hrefFor(item) + '">' + item.title + '</a></h3>' +
+            '<div class="search-result-meta">' +
+              '<span class="search-result-type">' + typeLabel(item.type) + '</span>' +
+              '<span class="search-result-domain">' + item.domain + '</span>' +
+              (item.tags.length ? item.tags.map(function(t) { return '<span class="search-result-tag">#' + t + '</span>'; }).join('') : '') +
+            '</div>' +
+            '<p class="search-result-summary">' + item.summary + '</p>' +
+          '</article>';
+        }).join('');
+    });
+  </script>
+</BaseLayout>

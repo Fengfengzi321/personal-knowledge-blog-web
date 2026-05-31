@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="100%" height="auto">
+  <title>Satellite Beam Coverage Demo</title>
+  <rect width="400" height="300" fill="#f0f4f8" rx="8"/>
+
+  <!-- Satellite -->
+  <g transform="translate(200, 40)">
+    <rect x="-12" y="-8" width="24" height="16" fill="#166a5b" rx="3"/>
+    <polygon points="-18,8 0,28 18,8" fill="#315f8c" opacity="0.7"/>
+    <line x1="0" y1="8" x2="0" y2="28" stroke="#315f8c" stroke-width="1.5"/>
+  </g>
+
+  <!-- Earth surface -->
+  <rect x="0" y="240" width="400" height="60" fill="#d7ded8" rx="0"/>
+  <rect x="0" y="240" width="400" height="3" fill="#166a5b" opacity="0.3"/>
+
+  <!-- Beam coverage cone -->
+  <polygon points="200,48 60,240 340,240" fill="none" stroke="#166a5b" stroke-width="2" stroke-dasharray="6,4" opacity="0.5">
+    <animate attributeName="stroke-dashoffset" from="0" to="20" dur="2s" repeatCount="indefinite"/>
+  </polygon>
+
+  <!-- Coverage area on ground -->
+  <ellipse cx="200" cy="240" rx="140" ry="12" fill="#166a5b" opacity="0.15">
+    <animate attributeName="rx" values="140;150;140" dur="3s" repeatCount="indefinite"/>
+  </ellipse>
+
+  <!-- Labels -->
+  <text x="200" y="30" text-anchor="middle" font-size="10" fill="#66736c" font-family="sans-serif">Satellite</text>
+  <text x="200" y="270" text-anchor="middle" font-size="11" fill="#66736c" font-family="sans-serif">Beam Coverage Footprint</text>
+  <text x="330" y="270" text-anchor="end" font-size="9" fill="#9f5a1a" font-family="sans-serif">Δf = fₛ/N</text>
+</svg>

@@ -1,0 +1,35 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Sidebar from '../../components/Sidebar.astro';
+---
+
+<BaseLayout title="About | Personal Knowledge Platform">
+  <fragment slot="sidebar">
+    <Sidebar currentSlug="" />
+  </fragment>
+
+  <article class="content-body">
+    <p class="eyebrow">About</p>
+    <h1>关于这个平台</h1>
+    <p class="lead">
+      一个个人知识沉淀与成长记录平台 — 将碎片化的技术知识逐步组织成可检索、可扩展、可公开分享的知识体系。
+    </p>
+
+    <h2>内容领域</h2>
+    <ul>
+      <li>数字信号处理算法与原理</li>
+      <li>卫星通信仿真与实验记录</li>
+      <li>星载资源调度算法</li>
+      <li>波束覆盖区域算法</li>
+      <li>仿真图像、GIF、短视频及可视化</li>
+    </ul>
+
+    <h2>技术栈</h2>
+    <ul>
+      <li><strong>框架：</strong> Astro v6</li>
+      <li><strong>内容：</strong> Markdown / MDX</li>
+      <li><strong>公式：</strong> KaTeX</li>
+      <li><strong>代码高亮：</strong> Shiki</li>
+    </ul>
+  </article>
+</BaseLayout>
