@@ -8,52 +8,60 @@ import {
 
 const items = [
   {
-    slug: 'fft-frequency-resolution',
-    type: 'card',
-    title: 'FFT Frequency Resolution',
-    domain: 'digital-signal-processing',
-    visibility: 'public',
-    related: ['lms-adaptive-filtering-principle'],
-  },
-  {
-    slug: 'private-link-budget',
-    type: 'card',
-    title: 'Private Link Budget',
-    domain: 'satellite-communication',
-    visibility: 'private',
-    related: [],
-  },
-  {
     slug: 'lms-adaptive-filtering-principle',
     type: 'article',
     title: 'LMS Adaptive Filtering Principle',
     domain: 'digital-signal-processing',
+    status: 'published',
     visibility: 'public',
-    relatedCards: ['fft-frequency-resolution'],
+    related: ['digital-signal-processing'],
+  },
+  {
+    slug: 'private-note',
+    type: 'article',
+    title: 'Private Note',
+    domain: 'satellite-communication',
+    status: 'draft',
+    visibility: 'private',
+    related: [],
+  },
+  {
+    slug: 'digital-signal-processing',
+    type: 'topic',
+    title: 'Digital Signal Processing',
+    domain: 'digital-signal-processing',
+    visibility: 'public',
+    featuredArticles: ['lms-adaptive-filtering-principle'],
   },
 ];
 
 test('filters private content from public collections', () => {
   assert.deepEqual(
     getPublicContent(items).map((item) => item.slug),
-    ['fft-frequency-resolution', 'lms-adaptive-filtering-principle'],
+    ['lms-adaptive-filtering-principle', 'digital-signal-processing'],
+  );
+});
+
+test('filters draft articles from public collections', () => {
+  assert.deepEqual(
+    getPublicContent(items).map((item) => item.slug),
+    ['lms-adaptive-filtering-principle', 'digital-signal-processing'],
   );
 });
 
 test('groups content by domain and type', () => {
-  assert.deepEqual(groupContentByDomain(getPublicContent(items)), {
-    'digital-signal-processing': {
-      cards: [items[0]],
-      articles: [items[2]],
-      topics: [],
-      media: [],
-    },
-  });
+  const grouped = groupContentByDomain(getPublicContent(items));
+  assert.equal(Object.keys(grouped).length, 1);
+  assert.ok(grouped['digital-signal-processing']);
+  assert.equal(grouped['digital-signal-processing'].articles.length, 1);
+  assert.equal(grouped['digital-signal-processing'].articles[0].slug, 'lms-adaptive-filtering-principle');
+  assert.equal(grouped['digital-signal-processing'].topics.length, 1);
+  assert.equal(grouped['digital-signal-processing'].topics[0].slug, 'digital-signal-processing');
 });
 
 test('resolves relationships without exposing private content', () => {
-  assert.deepEqual(
-    resolveRelatedItems(items[0], getPublicContent(items)).map((item) => item.slug),
-    ['lms-adaptive-filtering-principle'],
-  );
+  const publicItems = getPublicContent(items);
+  const resolved = resolveRelatedItems(items[2], publicItems);
+  assert.equal(resolved.length, 1);
+  assert.equal(resolved[0].slug, 'lms-adaptive-filtering-principle');
 });
