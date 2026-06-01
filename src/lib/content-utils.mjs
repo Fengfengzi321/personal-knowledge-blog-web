@@ -14,10 +14,8 @@ export function groupContentByDomain(items) {
     const domain = item.domain || 'uncategorized';
     if (!groups[domain]) {
       groups[domain] = {
-        cards: [],
         articles: [],
         topics: [],
-        media: [],
       };
     }
 
@@ -31,7 +29,7 @@ export function groupContentByDomain(items) {
 }
 
 export function resolveRelatedItems(item, publicItems) {
-  const relationKeys = ['related', 'relatedCards', 'children', 'featuredCards', 'featuredArticles'];
+  const relationKeys = ['related', 'children', 'featuredArticles'];
   const relatedSlugs = relationKeys.flatMap((key) => item[key] || []);
   const publicBySlug = new Map(publicItems.map((entry) => [entry.slug, entry]));
 

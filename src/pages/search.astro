@@ -2,7 +2,6 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getPublicContent } from '../lib/content-utils.mjs';
 
-const cardModules = import.meta.glob('../../content/cards/*.md', { eager: true });
 const articleModules = import.meta.glob('../../content/articles/*.md', { eager: true });
 const topicModules = import.meta.glob('../../content/topics/*.md', { eager: true });
 
@@ -15,7 +14,6 @@ function collect(source, type) {
 }
 
 const allItems = getPublicContent([
-  ...collect(cardModules, 'card'),
   ...collect(articleModules, 'article'),
   ...collect(topicModules, 'topic'),
 ]);
@@ -30,10 +28,10 @@ const searchData = allItems.map((item) => ({
 }));
 ---
 
-<BaseLayout title="Search | Personal Knowledge Platform" showSidebar={false}>
+<BaseLayout title="Search | 王十二的小站" showSidebar={false}>
   <div class="search-page">
     <h1 class="search-heading">Search</h1>
-    <p class="search-subtitle">Search any article, card, or topic across the knowledge base.</p>
+    <p class="search-subtitle">Search any article or topic across the knowledge base.</p>
     <div class="search-box">
       <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input
@@ -56,12 +54,11 @@ const searchData = allItems.map((item) => ({
     const data = JSON.parse(document.getElementById('searchData').textContent);
 
     function hrefFor(item) {
-      if (item.type === 'card') return '/cards/' + item.slug + '/';
       return '/' + item.type + 's/' + item.slug + '/';
     }
 
     function typeLabel(t) {
-      return t === 'card' ? 'Card' : t === 'article' ? 'Article' : 'Topic';
+      return t === 'article' ? 'Article' : 'Topic';
     }
 
     document.getElementById('searchInput').addEventListener('input', function() {

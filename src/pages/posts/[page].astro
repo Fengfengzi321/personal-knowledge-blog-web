@@ -2,10 +2,20 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getPublicContent } from '../../lib/content-utils.mjs';
 
-export function getStaticPaths() {
-  const PER_PAGE = 5;
+const PER_PAGE = 4;
 
-  function collect(source, type) {
+function collect(source, type) {
+  return Object.entries(source).map(([path, module]) => ({
+    ...module.frontmatter,
+    type,
+    slug: path.split('/').pop().replace(/\.mdx?$/, ''),
+  }));
+}
+
+export function getStaticPaths() {
+  const PER_PAGE = 4;
+
+  function collectInner(source, type) {
     return Object.entries(source).map(([path, module]) => ({
       ...module.frontmatter,
       type,
@@ -13,14 +23,12 @@ export function getStaticPaths() {
     }));
   }
 
-  const cardModules = import.meta.glob('../../../content/cards/*.md', { eager: true });
   const articleModules = import.meta.glob('../../../content/articles/*.md', { eager: true });
   const topicModules = import.meta.glob('../../../content/topics/*.md', { eager: true });
 
   const allItems = getPublicContent([
-    ...collect(cardModules, 'card'),
-    ...collect(articleModules, 'article'),
-    ...collect(topicModules, 'topic'),
+    ...collectInner(articleModules, 'article'),
+    ...collectInner(topicModules, 'topic'),
   ]);
 
   const pages = Math.ceil(allItems.length / PER_PAGE) || 1;
@@ -31,43 +39,30 @@ export function getStaticPaths() {
   return paths;
 }
 
-const PER_PAGE = 5;
-
-function collect(source, type) {
-  return Object.entries(source).map(([path, module]) => ({
-    ...module.frontmatter,
-    type,
-    slug: path.split('/').pop().replace(/\.mdx?$/, ''),
-  }));
-}
-
-const cardModules = import.meta.glob('../../../content/cards/*.md', { eager: true });
 const articleModules = import.meta.glob('../../../content/articles/*.md', { eager: true });
 const topicModules = import.meta.glob('../../../content/topics/*.md', { eager: true });
 
 const allItems = getPublicContent([
-  ...collect(cardModules, 'card'),
   ...collect(articleModules, 'article'),
   ...collect(topicModules, 'topic'),
 ]);
 
 const sortedItems = [...allItems].sort((a, b) => {
-  const dateA = a.date || '0000-00-00';
-  const dateB = b.date || '0000-00-00';
+  const dateA = a.updatedDate || a.date || '0000-00-00';
+  const dateB = b.updatedDate || b.date || '0000-00-00';
   if (dateA > dateB) return -1;
   if (dateA < dateB) return 1;
   return a.title.localeCompare(b.title);
 });
 
 const totalPages = Math.ceil(sortedItems.length / PER_PAGE) || 1;
-
 const { page } = Astro.params;
 const currentPage = Math.max(2, Math.min(totalPages, parseInt(page, 10) || 2));
 const startIdx = (currentPage - 1) * PER_PAGE;
 const pageItems = sortedItems.slice(startIdx, startIdx + PER_PAGE);
 
 function hrefFor(item) {
-  return `/${item.type === 'card' ? 'cards' : `${item.type}s`}/${item.slug}/`;
+  return `/${item.type}s/${item.slug}/`;
 }
 
 function formatDate(raw) {
@@ -75,13 +70,14 @@ function formatDate(raw) {
   const datePart = typeof raw === 'string' ? raw.split('T')[0] : String(raw).split('T')[0];
   const [y, m, d] = datePart.split('-').map(Number);
   if (!y || !m || !d) return '';
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${d} ${months[m - 1]}, ${y}`;
 }
 
-function toSlug(raw) {
+function toIso(raw) {
   if (!raw) return '';
-  return (typeof raw === 'string' ? raw.split('T')[0] : String(raw).split('T')[0]);
+  return typeof raw === 'string' ? raw.split('T')[0] : String(raw).split('T')[0];
 }
 
 function pageHref(p) {
@@ -89,50 +85,290 @@ function pageHref(p) {
 }
 ---
 
-<BaseLayout title={`Posts — Page ${currentPage}`} showSidebar={false}>
+<BaseLayout title={`Posts — Page ${currentPage} | 王十二的小站`} showSidebar={false}>
   <div class="posts-page">
-    <h1 class="posts-heading">Posts</h1>
-    <p class="posts-subtitle">All the articles I've posted. — Page {currentPage}</p>
+    <header class="posts-header">
+      <h1 class="posts-heading">Posts</h1>
+      <p class="posts-subtitle">
+        All {sortedItems.length} articles — Page {currentPage} of {totalPages}
+      </p>
+    </header>
 
-    <div class="posts-list">
-      {pageItems.map((item) => (
-        <article class="post-entry">
-          <h3 class="post-entry-title">
-            <a href={hrefFor(item)}>{item.title}</a>
-          </h3>
-          <p class="post-entry-date">
-            <svg class="cal-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            <time datetime={toSlug(item.date)}>{formatDate(item.date)}</time>
-          </p>
-          <p class="post-entry-desc">{item.summary}</p>
-        </article>
-      ))}
-    </div>
+    {pageItems.length === 0 ? (
+      <p class="posts-empty">No posts on this page.</p>
+    ) : (
+      <ul class="post-list" role="list">
+        {pageItems.map((item) => {
+          const isUpdated = item.updatedDate && item.updatedDate !== item.date;
+          const displayDate = isUpdated ? item.updatedDate : item.date;
+          const tags = item.tags ?? [];
+          return (
+            <li class="post-item">
+              <a href={hrefFor(item)} class="post-item-link">
+                <h2 class="post-item-title">{item.title}</h2>
 
-    {totalPages > 1 && (
-      <nav class="pagination" aria-label="Pagination">
-        {currentPage > 1 ? (
-          <a class="page-link prev" href={pageHref(currentPage - 1)} aria-label="Previous page">‹ Prev</a>
-        ) : (
-          <span class="page-link disabled">‹ Prev</span>
-        )}
+                <div class="post-item-meta">
+                  <svg class="cal-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <time class="post-item-date" datetime={toIso(displayDate)}>
+                    {formatDate(displayDate)}
+                  </time>
+                  {isUpdated && <span class="updated-badge">(Updated)</span>}
+                </div>
 
-        <div class="page-numbers">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            p === currentPage ? (
-              <span class="page-num current" aria-current="page">{p}</span>
-            ) : (
-              <a class="page-num" href={pageHref(p)}>{p}</a>
-            )
-          ))}
-        </div>
+                {item.summary && (
+                  <p class="post-item-summary">{item.summary}</p>
+                )}
 
-        {currentPage < totalPages ? (
-          <a class="page-link next" href={pageHref(currentPage + 1)} aria-label="Next page">Next ›</a>
-        ) : (
-          <span class="page-link disabled">Next ›</span>
-        )}
-      </nav>
+                {tags.length > 0 && (
+                  <div class="post-item-tags">
+                    {tags.slice(0, 4).map((tag) => (
+                      <span class="post-tag">#{tag}</span>
+                    ))}
+                  </div>
+                )}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
     )}
+
+    <nav class="pagination" aria-label="Page navigation">
+      {currentPage > 1 ? (
+        <a class="page-btn" href={pageHref(currentPage - 1)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Prev
+        </a>
+      ) : (
+        <span class="page-btn disabled" aria-disabled="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Prev
+        </span>
+      )}
+
+      <span class="page-indicator">{currentPage} / {totalPages}</span>
+
+      {currentPage < totalPages ? (
+        <a class="page-btn" href={pageHref(currentPage + 1)}>
+          Next
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      ) : (
+        <span class="page-btn disabled" aria-disabled="true">
+          Next
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+      )}
+    </nav>
   </div>
 </BaseLayout>
+
+<style>
+:root {
+  --ap-fill:        #FBFEFB;
+  --ap-base:        #282728;
+  --ap-accent:      #006CAC;
+  --ap-accent-hov:  #00508c;
+  --ap-muted:       #71717a;
+  --ap-muted-2:     #a1a1aa;
+  --ap-border:      #ECE9E9;
+  --ap-card-hov:    #CDCDCD;
+}
+
+html.dark {
+  --ap-fill:        #2F3741;
+  --ap-base:        #E6E6E6;
+  --ap-accent:      #1AD9D9;
+  --ap-accent-hov:  #0fbdbd;
+  --ap-muted:       #a1a1aa;
+  --ap-muted-2:     #71717a;
+  --ap-border:      #3B4655;
+  --ap-card-hov:    #596B81;
+}
+
+.posts-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 0 96px;
+  font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--ap-base);
+}
+
+.posts-header {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+}
+
+.posts-heading {
+  font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(1.8rem, 4vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 4px;
+  line-height: 1.2;
+  color: var(--ap-base);
+}
+
+.posts-subtitle {
+  font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.95rem;
+  color: var(--ap-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.posts-empty {
+  color: var(--ap-muted);
+  font-size: 0.95rem;
+  text-align: center;
+  padding: 60px 0;
+}
+
+.post-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.post-item-link {
+  display: block;
+  padding: 16px 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.post-item-link:hover {
+  text-decoration: none;
+}
+
+.post-item-title {
+  font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.5;
+  margin: 0 0 2px;
+  color: var(--ap-base);
+  transition: color 0.12s;
+}
+
+.post-item-link:hover .post-item-title {
+  color: var(--ap-accent);
+}
+
+.post-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.cal-icon {
+  flex-shrink: 0;
+  color: var(--ap-muted-2);
+}
+
+.post-item-date {
+  font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.875rem;
+  color: var(--ap-muted);
+  font-feature-settings: "tnum";
+  line-height: 1;
+}
+
+.updated-badge {
+  font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.8rem;
+  color: var(--ap-muted-2);
+  font-style: italic;
+}
+
+.post-item-summary {
+  font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.875rem;
+  color: var(--ap-muted);
+  margin: 4px 0 0;
+  line-height: 1.65;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.post-item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.post-tag {
+  font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.8rem;
+  color: var(--ap-muted);
+  transition: color 0.12s;
+}
+
+.post-item-link:hover .post-tag {
+  color: var(--ap-accent);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 56px;
+  padding-top: 28px;
+  font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.page-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ap-muted);
+  background: transparent;
+  border: 1px solid var(--ap-border);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: border-color 0.12s, color 0.12s;
+}
+
+a.page-btn:hover {
+  border-color: var(--ap-accent);
+  color: var(--ap-accent);
+  text-decoration: none;
+}
+
+.page-btn.disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+.page-indicator {
+  font-size: 0.875rem;
+  color: var(--ap-muted);
+  font-weight: 500;
+  min-width: 56px;
+  text-align: center;
+  font-feature-settings: "tnum";
+}
+
+@media (max-width: 480px) {
+  .posts-page {
+    padding: 32px 0 64px;
+  }
+
+  .post-item-title {
+    font-size: 1.05rem;
+  }
+
+  .post-item-link {
+    padding: 14px 0;
+  }
+}
+</style>

@@ -4,7 +4,6 @@ import Sidebar from '../../components/Sidebar.astro';
 import { getPublicContent, resolveRelatedItems } from '../../lib/content-utils.mjs';
 
 const modules = import.meta.glob('../../../content/topics/*.md', { eager: true });
-const cardModules = import.meta.glob('../../../content/cards/*.md', { eager: true });
 const articleModules = import.meta.glob('../../../content/articles/*.md', { eager: true });
 
 function collect(source, type) {
@@ -32,7 +31,6 @@ export function getStaticPaths() {
 
 const { item } = Astro.props;
 const related = resolveRelatedItems(item, getPublicContent([
-  ...collect(cardModules, 'card'),
   ...collect(articleModules, 'article'),
   ...collect(modules, 'topic'),
 ]));
@@ -58,7 +56,7 @@ const Content = item.Content;
         <h2>专题节点</h2>
         <div class="related-list">
           {related.map((entry) => (
-            <a class="related-item" href={`/${entry.type === 'card' ? 'cards' : `${entry.type}s`}/${entry.slug}/`}>
+            <a class="related-item" href={`/${entry.type}s/${entry.slug}/`}>
               {entry.title}
             </a>
           ))}

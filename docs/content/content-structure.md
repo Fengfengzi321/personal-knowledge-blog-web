@@ -4,7 +4,6 @@
 
 ```text
 content/
-  cards/
   articles/
   topics/
 public/
@@ -15,7 +14,6 @@ public/
 
 - Use lowercase kebab-case file names.
 - Use English slugs for URLs, even when the body content is Chinese.
-- Keep one concept per card.
 - Keep one coherent explanation per article.
 - Keep topic pages stable and framework-oriented.
 

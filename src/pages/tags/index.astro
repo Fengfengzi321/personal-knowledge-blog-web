@@ -3,7 +3,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Sidebar from '../../components/Sidebar.astro';
 import { getPublicContent } from '../../lib/content-utils.mjs';
 
-const cardModules = import.meta.glob('../../../content/cards/*.md', { eager: true });
 const articleModules = import.meta.glob('../../../content/articles/*.md', { eager: true });
 const topicModules = import.meta.glob('../../../content/topics/*.md', { eager: true });
 
@@ -16,7 +15,6 @@ function collect(source, type) {
 }
 
 const allItems = getPublicContent([
-  ...collect(cardModules, 'card'),
   ...collect(articleModules, 'article'),
   ...collect(topicModules, 'topic'),
 ]);

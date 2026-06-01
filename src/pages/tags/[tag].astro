@@ -4,7 +4,6 @@ import Sidebar from '../../components/Sidebar.astro';
 import { getPublicContent } from '../../lib/content-utils.mjs';
 
 export function getStaticPaths() {
-  const cardModules = import.meta.glob('../../../content/cards/*.md', { eager: true });
   const articleModules = import.meta.glob('../../../content/articles/*.md', { eager: true });
   const topicModules = import.meta.glob('../../../content/topics/*.md', { eager: true });
 
@@ -17,7 +16,6 @@ export function getStaticPaths() {
   }
 
   const allItems = getPublicContent([
-    ...collect(cardModules, 'card'),
     ...collect(articleModules, 'article'),
     ...collect(topicModules, 'topic'),
   ]);
@@ -44,12 +42,10 @@ function collect(source, type) {
   }));
 }
 
-const cardModules = import.meta.glob('../../../content/cards/*.md', { eager: true });
 const articleModules = import.meta.glob('../../../content/articles/*.md', { eager: true });
 const topicModules = import.meta.glob('../../../content/topics/*.md', { eager: true });
 
 const allItems = getPublicContent([
-  ...collect(cardModules, 'card'),
   ...collect(articleModules, 'article'),
   ...collect(topicModules, 'topic'),
 ]);
@@ -72,7 +68,7 @@ const sortedTags = Object.entries(tagMap)
   .sort(([, a], [, b]) => b.items.length - a.items.length);
 
 function hrefFor(item) {
-  return `/${item.type === 'card' ? 'cards' : `${item.type}s`}/${item.slug}/`;
+  return `/${item.type}s/${item.slug}/`;
 }
 ---
 
@@ -103,7 +99,7 @@ function hrefFor(item) {
         {data.items.map((item) => (
           <li>
             <a href={hrefFor(item)}>
-              {item.type === 'card' ? '📄' : item.type === 'article' ? '📝' : '📂'} {item.title}
+              {item.type === 'article' ? '📝' : '📂'} {item.title}
             </a>
             <span style="color: var(--muted); font-size: 0.85rem; margin-left: 8px;">
               {item.type} · {item.domain}

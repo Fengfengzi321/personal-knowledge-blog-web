@@ -1,79 +1,317 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getPublicContent, groupContentByDomain } from '../lib/content-utils.mjs';
+import { getPublicContent } from '../lib/content-utils.mjs';
 
-const cardModules = import.meta.glob('../../content/cards/*.md', { eager: true });
 const articleModules = import.meta.glob('../../content/articles/*.md', { eager: true });
 const topicModules = import.meta.glob('../../content/topics/*.md', { eager: true });
 
-function collect(modules, type) {
-  return Object.entries(modules).map(([path, module]) => ({
+function collect(source, type) {
+  return Object.entries(source).map(([path, module]) => ({
     ...module.frontmatter,
     type,
     slug: path.split('/').pop().replace(/\.mdx?$/, ''),
   }));
 }
 
-const publicItems = getPublicContent([
-  ...collect(cardModules, 'card'),
-  ...collect(articleModules, 'article'),
-  ...collect(topicModules, 'topic'),
-]);
-const grouped = groupContentByDomain(publicItems);
-const totalCards = publicItems.filter((item) => item.type === 'card').length;
-const totalArticles = publicItems.filter((item) => item.type === 'article').length;
-const totalTopics = publicItems.filter((item) => item.type === 'topic').length;
+const allArticles = collect(articleModules, 'article')
+  .filter((a) => a.visibility === 'public');
+const allTopics = collect(topicModules, 'topic')
+  .filter((t) => t.visibility === 'public');
 
-function hrefFor(item) {
-  return `/${item.type === 'card' ? 'cards' : `${item.type}s`}/${item.slug}/`;
+const recentArticles = [...allArticles]
+  .sort((a, b) => {
+    const da = a.date || '0000-00-00';
+    const db = b.date || '0000-00-00';
+    if (da > db) return -1;
+    if (da < db) return 1;
+    return 0;
+  })
+  .slice(0, 5);
+
+const topicTags = allTopics.map((t) => ({
+  name: t.title,
+  slug: t.slug,
+}));
+
+function formatDate(raw) {
+  if (!raw) return '';
+  const datePart = typeof raw === 'string' ? raw.split('T')[0] : String(raw).split('T')[0];
+  const [y, m, d] = datePart.split('-').map(Number);
+  if (!y || !m || !d) return '';
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
+
+// Estimate read time (rough: 300 chars/min)
+function readTime(content) {
+  if (!content) return '1';
+  const text = typeof content === 'string' ? content : '';
+  const words = text.replace(/\s+/g, '').length;
+  return Math.max(1, Math.ceil(words / 300));
+}
+
+const totalWords = allArticles.reduce((sum, a) => {
+  return sum + (a.summary ? a.summary.length : 0);
+}, 0);
 ---
 
-<BaseLayout title="Knowledge Map" showSidebar={false}>
-  <section class="hero">
-    <div>
-      <p class="eyebrow">王十二的小站 · 知识地图</p>
-      <h1>把碎片知识沉淀成自己的技术地图</h1>
-      <p class="lead">
-        以知识地图为入口，将 DSP 算法、卫星通信仿真、资源调度和波束覆盖算法逐步组织成可检索、可扩展、可公开分享的个人知识体系。
+<BaseLayout title="王十二的小站" showSidebar={false}>
+  <div class="home">
+    <!-- ── Hero ── -->
+    <section class="hero-section">
+      <img src="/avatar.jpg" alt="头像" class="hero-avatar" />
+      <h1 class="hero-name">王十二的小站</h1>
+      <p class="hero-tagline">
+        把碎片知识沉淀成自己的技术地图
       </p>
-    </div>
-    <aside class="panel">
-      <div class="stats" aria-label="Content statistics">
-        <div class="stat"><strong>{totalTopics}</strong><span>专题</span></div>
-        <div class="stat"><strong>{totalCards}</strong><span>卡片</span></div>
-        <div class="stat"><strong>{totalArticles}</strong><span>文章</span></div>
-      </div>
-    </aside>
-  </section>
 
-  <section class="domain-grid" aria-label="Knowledge domains">
-    {Object.entries(grouped).map(([domain, group]) => (
-      <article class="domain">
-        <div class="domain-header">
-          <div>
-            <p class="eyebrow">{domain}</p>
-            <h2>{group.topics[0]?.title ?? domain}</h2>
-          </div>
-          <div class="count-row">
-            <span class="badge">{group.cards.length} cards</span>
-            <span class="badge">{group.articles.length} articles</span>
-          </div>
-        </div>
-
-        <div class="section-list">
-          {[...group.topics, ...group.cards, ...group.articles].map((item) => (
-            <a class="content-card" href={hrefFor(item)}>
-              <h3>{item.title}</h3>
-              <p>{item.summary}</p>
-              <div class="meta">
-                <span class={`tag ${item.status ?? ''}`}>{item.status ?? item.type}</span>
-                <span class={`tag ${item.visibility}`}>{item.visibility}</span>
-              </div>
-            </a>
+      {topicTags.length > 0 && (
+        <div class="hero-topics">
+          {topicTags.map((t) => (
+            <a href={`/topics/${t.slug}/`} class="hero-topic-link">{t.name}</a>
           ))}
         </div>
-      </article>
-    ))}
-  </section>
+      )}
+
+      <p class="hero-words">
+        共 {totalWords} 字
+      </p>
+    </section>
+
+    <!-- ── Recent Posts ── -->
+    <section class="recent-section">
+      <h2 class="section-heading">Recent Posts</h2>
+
+      {recentArticles.length === 0 ? (
+        <p class="recent-empty">暂无文章，敬请期待。</p>
+      ) : (
+        <div class="recent-list">
+          {recentArticles.map((item) => (
+            <article class="recent-item">
+              <h3 class="recent-title">
+                <a href={`/articles/${item.slug}/`}>{item.title}</a>
+              </h3>
+              <div class="recent-meta">
+                <svg class="cal-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <time datetime={formatDate(item.date)}>{formatDate(item.date)}</time>
+              </div>
+              {item.summary && (
+                <p class="recent-summary">{item.summary}</p>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
+
+      <div class="read-more-wrapper">
+        <a href="/posts/" class="read-more-link">Read More →</a>
+      </div>
+    </section>
+  </div>
 </BaseLayout>
+
+<style>
+/* ── Color tokens (AstroPaper) ── */
+:root {
+  --ap-fill:   #FBFEFB;
+  --ap-base:   #282728;
+  --ap-accent: #006CAC;
+  --ap-muted:  #71717a;
+  --ap-border: #ECE9E9;
+}
+
+html.dark {
+  --ap-fill:   #2F3741;
+  --ap-base:   #E6E6E6;
+  --ap-accent: #1AD9D9;
+  --ap-muted:  #a1a1aa;
+  --ap-border: #3B4655;
+}
+
+/* ── Page shell ── */
+.home {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 60px 24px 80px;
+  font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--ap-base);
+}
+
+/* ── Hero ── */
+.hero-section {
+  text-align: center;
+  margin-bottom: 64px;
+}
+
+.hero-avatar {
+  display: block;
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto 20px;
+  border: 2px solid var(--ap-border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.hero-name {
+  font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
+  color: var(--ap-base);
+}
+
+.hero-tagline {
+  font-size: 0.95rem;
+  color: var(--ap-muted);
+  margin: 0 0 20px;
+  line-height: 1.6;
+}
+
+.hero-topics {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.hero-topic-link {
+  font-size: 0.85rem;
+  color: var(--ap-muted);
+  text-decoration: none;
+  padding: 3px 12px;
+  border: 1px solid var(--ap-border);
+  border-radius: 20px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.hero-topic-link:hover {
+  border-color: var(--ap-accent);
+  color: var(--ap-accent);
+  text-decoration: none;
+}
+
+.hero-words {
+  font-size: 0.8rem;
+  color: var(--ap-muted);
+  opacity: 0.7;
+  margin: 0;
+}
+
+/* ── Recent Posts ── */
+.recent-section {
+  border-top: 1px solid var(--ap-border);
+  padding-top: 32px;
+}
+
+.section-heading {
+  font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 24px;
+  color: var(--ap-base);
+}
+
+.recent-empty {
+  color: var(--ap-muted);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 32px 0;
+}
+
+.recent-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.recent-item {
+  padding: 16px 0;
+}
+
+.recent-title {
+  font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 6px;
+  line-height: 1.4;
+}
+
+.recent-title a {
+  color: var(--ap-base);
+  text-decoration: none;
+  transition: color 0.12s;
+}
+
+.recent-title a:hover {
+  color: var(--ap-accent);
+  text-decoration: none;
+}
+
+.recent-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.cal-icon {
+  color: var(--ap-muted);
+  flex-shrink: 0;
+}
+
+.recent-meta time {
+  font-size: 0.85rem;
+  color: var(--ap-muted);
+  font-feature-settings: "tnum";
+}
+
+.recent-summary {
+  font-size: 0.85rem;
+  color: var(--ap-muted);
+  margin: 0;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Read More ── */
+.read-more-wrapper {
+  margin-top: 24px;
+}
+
+.read-more-link {
+  font-size: 0.9rem;
+  color: var(--ap-muted);
+  text-decoration: none;
+  transition: color 0.12s;
+}
+
+.read-more-link:hover {
+  color: var(--ap-accent);
+  text-decoration: none;
+}
+
+/* ── Mobile ── */
+@media (max-width: 480px) {
+  .home {
+    padding: 40px 16px 64px;
+  }
+
+  .hero-section {
+    margin-bottom: 48px;
+  }
+
+  .hero-name {
+    font-size: 1.4rem;
+  }
+
+  .hero-avatar {
+    width: 88px;
+    height: 88px;
+  }
+}
+</style>
