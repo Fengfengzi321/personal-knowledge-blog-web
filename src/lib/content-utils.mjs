@@ -1,3 +1,8 @@
+// BASE is the subpath for GitHub Pages deployment
+// e.g. '/personal-knowledge-blog-web' or '' for root domain
+const rawBase = import.meta.env.BASE_URL || '/';
+export const BASE = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
+
 export function getPublicContent(items) {
   return items.filter((item) => {
     if (item.visibility !== 'public') return false;

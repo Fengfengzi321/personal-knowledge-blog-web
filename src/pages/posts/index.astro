@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getPublicContent } from '../../lib/content-utils.mjs';
+import { getPublicContent, BASE } from '../../lib/content-utils.mjs';
 
 const PER_PAGE = 4;
 
@@ -32,7 +32,7 @@ const totalPages = Math.ceil(sortedItems.length / PER_PAGE) || 1;
 const pageItems = sortedItems.slice(0, PER_PAGE);
 
 function hrefFor(item) {
-  return `/${item.type}s/${item.slug}/`;
+  return `${BASE}/${item.type}s/${item.slug}/`;
 }
 
 function formatDate(raw) {

@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import { BASE } from '../lib/content-utils.mjs';
 
 const { title, description = '个人知识沉淀与成长记录平台', showSidebar = true } = Astro.props;
 ---
@@ -27,7 +28,7 @@ const { title, description = '个人知识沉淀与成长记录平台', showSide
       <div class="header-top">
         <div class="header-left">
           <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
-          <a class="brand" href="/">🗺️ 王十二的小站</a>
+          <a class="brand" href={BASE + '/'}>🗺️ 王十二的小站</a>
         </div>
         <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
           <span id="themeIcon">🌙</span>
@@ -35,11 +36,11 @@ const { title, description = '个人知识沉淀与成长记录平台', showSide
       </div>
       <nav class="tab-bar" aria-label="Primary tabs">
         <div class="tab-group tab-group-right" style="margin-left: auto;">
-          <a href="/posts/" class="tab">Posts</a>
-          <a href="/learn/" class="tab">Learn</a>
-          <a href="/tags/" class="tab">Tags</a>
-          <a href="/about/" class="tab">About</a>
-          <a href="/search/" class="tab search-tab" aria-label="Search">
+          <a href={BASE + '/posts/'} class="tab">Posts</a>
+          <a href={BASE + '/learn/'} class="tab">Learn</a>
+          <a href={BASE + '/tags/'} class="tab">Tags</a>
+          <a href={BASE + '/about/'} class="tab">About</a>
+          <a href={BASE + '/search/'} class="tab search-tab" aria-label="Search">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </a>
         </div>

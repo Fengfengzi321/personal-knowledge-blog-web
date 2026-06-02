@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getPublicContent } from '../../lib/content-utils.mjs';
+import { getPublicContent, BASE } from '../../lib/content-utils.mjs';
 
 const PER_PAGE = 4;
 
@@ -62,7 +62,7 @@ const startIdx = (currentPage - 1) * PER_PAGE;
 const pageItems = sortedItems.slice(startIdx, startIdx + PER_PAGE);
 
 function hrefFor(item) {
-  return `/${item.type}s/${item.slug}/`;
+  return `${BASE}/${item.type}s/${item.slug}/`;
 }
 
 function formatDate(raw) {
@@ -81,7 +81,7 @@ function toIso(raw) {
 }
 
 function pageHref(p) {
-  return p === 1 ? '/posts/' : `/posts/${p}/`;
+  return p === 1 ? `${BASE}/posts/` : `${BASE}/posts/${p}/`;
 }
 ---
 

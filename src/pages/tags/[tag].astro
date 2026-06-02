@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Sidebar from '../../components/Sidebar.astro';
-import { getPublicContent } from '../../lib/content-utils.mjs';
+import { getPublicContent, BASE } from '../../lib/content-utils.mjs';
 
 export function getStaticPaths() {
   const articleModules = import.meta.glob('../../../content/articles/*.md', { eager: true });
@@ -68,7 +68,7 @@ const sortedTags = Object.entries(tagMap)
   .sort(([, a], [, b]) => b.items.length - a.items.length);
 
 function hrefFor(item) {
-  return `/${item.type}s/${item.slug}/`;
+  return `${BASE}/${item.type}s/${item.slug}/`;
 }
 ---
 
@@ -85,7 +85,7 @@ function hrefFor(item) {
     <div class="tag-cloud">
       {sortedTags.map(([key, d]) => (
         <a
-          href={`/tags/${encodeURIComponent(key)}/`}
+          href={`${BASE}/tags/${encodeURIComponent(key)}/`}
           class={`tag-item${tag === key ? ' active' : ''}`}
         >
           #{d.name}

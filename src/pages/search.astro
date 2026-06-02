@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getPublicContent } from '../lib/content-utils.mjs';
+import { getPublicContent, BASE } from '../lib/content-utils.mjs';
 
 const articleModules = import.meta.glob('../../content/articles/*.md', { eager: true });
 const topicModules = import.meta.glob('../../content/topics/*.md', { eager: true });
@@ -52,9 +52,10 @@ const searchData = allItems.map((item) => ({
   <script type="application/json" id="searchData">{JSON.stringify(searchData)}</script>
   <script is:inline>
     const data = JSON.parse(document.getElementById('searchData').textContent);
+    const SEARCH_BASE = '{BASE}';
 
     function hrefFor(item) {
-      return '/' + item.type + 's/' + item.slug + '/';
+      return SEARCH_BASE + '/' + item.type + 's/' + item.slug + '/';
     }
 
     function typeLabel(t) {

@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Sidebar from '../../components/Sidebar.astro';
-import { getPublicContent, resolveRelatedItems } from '../../lib/content-utils.mjs';
+import { getPublicContent, resolveRelatedItems, BASE } from '../../lib/content-utils.mjs';
 
 const modules = import.meta.glob('../../../content/articles/*.md', { eager: true });
 
@@ -55,7 +55,7 @@ const Content = item.Content;
         <h2>关联内容</h2>
         <div class="related-list">
           {related.map((entry) => (
-            <a class="related-item" href={`/${entry.type}s/${entry.slug}/`}>
+            <a class="related-item" href={`${BASE}/${entry.type}s/${entry.slug}/`}>
               {entry.title}
             </a>
           ))}

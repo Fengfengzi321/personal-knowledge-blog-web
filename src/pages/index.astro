@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getPublicContent } from '../lib/content-utils.mjs';
+import { getPublicContent, BASE } from '../lib/content-utils.mjs';
 
 const articleModules = import.meta.glob('../../content/articles/*.md', { eager: true });
 const topicModules = import.meta.glob('../../content/topics/*.md', { eager: true });
@@ -58,7 +58,7 @@ const totalWords = allArticles.reduce((sum, a) => {
   <div class="home">
     <!-- ── Hero ── -->
     <section class="hero-section">
-      <img src="/avatar.jpg" alt="头像" class="hero-avatar" />
+      <img src={`${BASE}/avatar.jpg`} alt="头像" class="hero-avatar" />
       <h1 class="hero-name">王十二的小站</h1>
       <p class="hero-tagline">
         把碎片知识沉淀成自己的技术地图
@@ -67,7 +67,7 @@ const totalWords = allArticles.reduce((sum, a) => {
       {topicTags.length > 0 && (
         <div class="hero-topics">
           {topicTags.map((t) => (
-            <a href={`/topics/${t.slug}/`} class="hero-topic-link">{t.name}</a>
+            <a href={`${BASE}/topics/${t.slug}/`} class="hero-topic-link">{t.name}</a>
           ))}
         </div>
       )}
@@ -88,7 +88,7 @@ const totalWords = allArticles.reduce((sum, a) => {
           {recentArticles.map((item) => (
             <article class="recent-item">
               <h3 class="recent-title">
-                <a href={`/articles/${item.slug}/`}>{item.title}</a>
+                <a href={`${BASE}/articles/${item.slug}/`}>{item.title}</a>
               </h3>
               <div class="recent-meta">
                 <svg class="cal-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -103,7 +103,7 @@ const totalWords = allArticles.reduce((sum, a) => {
       )}
 
       <div class="read-more-wrapper">
-        <a href="/posts/" class="read-more-link">Read More →</a>
+        <a href={`${BASE}/posts/`} class="read-more-link">Read More →</a>
       </div>
     </section>
   </div>

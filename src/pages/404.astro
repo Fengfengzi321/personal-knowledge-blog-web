@@ -1,11 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { BASE } from '../lib/content-utils.mjs';
 ---
 
 <BaseLayout title="页面未找到 | Personal Knowledge Platform" showSidebar={false}>
   <div class="not-found">
     <h1>404</h1>
     <p>这片知识领域还没有内容，或者链接有误。</p>
-    <a href="/">回到知识地图</a>
+    <a href={BASE + '/'}>回到知识地图</a>
   </div>
 </BaseLayout>

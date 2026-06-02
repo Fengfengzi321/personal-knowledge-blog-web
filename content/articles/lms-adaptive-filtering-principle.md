@@ -5,6 +5,7 @@ domain: digital-signal-processing
 tags:
   - adaptive-filtering
   - lms
+date: 2026-06-02
 status: draft
 relatedCards:
   - fft-frequency-resolution

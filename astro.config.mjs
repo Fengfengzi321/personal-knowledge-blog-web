@@ -5,6 +5,7 @@ import remarkMath from 'remark-math';
 
 export default defineConfig({
   site: 'https://fengfengzi321.github.io',
+  base: '/personal-knowledge-blog-web',
   integrations: [mdx()],
   markdown: {
     remarkPlugins: [remarkMath],
